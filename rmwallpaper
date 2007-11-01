@@ -1,0 +1,59 @@
+#!/usr/bin/python
+
+import os
+
+def db_clicked (button, f):
+    os.unlink (f)
+    gtk.main_quit ()
+
+import gconf
+import gtk
+
+c = gconf.Client ()
+pic = c.get_string ('/desktop/gnome/background/picture_filename')
+del c
+
+pb = gtk.gdk.pixbuf_new_from_file (pic).scale_simple (400, 300, gtk.gdk.INTERP_BILINEAR)
+
+i = gtk.Image ()
+i.set_from_pixbuf (pb)
+i.show ()
+
+f = gtk.Frame ()
+f.add (i)
+f.set_shadow_type (gtk.SHADOW_IN)
+f.show ()
+
+db = gtk.Button (stock = gtk.STOCK_DELETE)
+db.connect ('clicked', db_clicked, pic)
+db.show ()
+
+cb = gtk.Button (stock = gtk.STOCK_CANCEL)
+cb.connect ('clicked', gtk.main_quit)
+cb.set_flags (gtk.CAN_DEFAULT)
+cb.show ()
+
+bb = gtk.HButtonBox ()
+bb.pack_start (db, padding = 8)
+bb.pack_end (cb, padding = 8)
+bb.show ()
+
+vb = gtk.VBox ()
+vb.pack_start (f)
+vb.pack_end (bb, expand = False)
+#vb.set_spacing (2)
+vb.set_spacing (8)
+vb.show ()
+
+w = gtk.Window ()
+w.connect ('delete-event', gtk.main_quit)
+#w.set_border_width (5)
+w.set_border_width (8)
+w.add (vb)
+w.set_default (cb) # TODO: this does not work
+w.set_title ('Delete desktop background?')
+w.set_position (gtk.WIN_POS_CENTER)
+w.set_resizable (False)
+w.show ()
+
+gtk.main ()
