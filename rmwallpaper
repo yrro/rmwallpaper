@@ -47,16 +47,24 @@ w.show_all ()
 def on_changed (settings, key):
 	if key == 'picture-uri':
 		pic = Gio.File.new_for_uri (settings.get_string (key))
-		pb = GdkPixbuf.Pixbuf.new_from_file_at_size (pic.get_path (), 400, 300)
-		i.set_from_pixbuf (pb)
+		try:
+			pb = GdkPixbuf.Pixbuf.new_from_file_at_size (pic.get_path (), 400, 300)
+			i.set_from_pixbuf (pb)
+		except:
+			pic = None
+			i.set_from_stock (Gtk.STOCK_DIALOG_WARNING, Gtk.IconSize.DIALOG)
 
 		global db_handler
 		try:
 			db.disconnect (db_handler)
 		except NameError:
 			pass
-		db_handler = db.connect ('clicked', db_clicked, pic)
-		db.set_sensitive (True)
+
+		if pic:
+			db_handler = db.connect ('clicked', db_clicked, pic)
+			db.set_sensitive (True)
+		else:
+			db.set_sensitive (False)
 
 c = Gio.Settings.new ('org.gnome.desktop.background')
 c.connect ('changed', on_changed)
