@@ -1,59 +1,65 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os
+import sys
+
+from gi.repository import GdkPixbuf
+from gi.repository import Gtk
+from gi.repository import Gio
+
+# The image's pixbuf is swapped out whenever the background image changes
+i = Gtk.Image ()
+
+f = Gtk.Frame ()
+f.add (i)
+f.set_shadow_type (Gtk.ShadowType.IN)
 
 def db_clicked (button, f):
-    os.unlink (f)
-    gtk.main_quit ()
+	f.delete (None)
+	global db_handler
+	button.disconnect (db_handler)
+	del db_handler
+	button.set_sensitive (False)
 
-import gconf
-import gtk
+db = Gtk.Button (stock = Gtk.STOCK_DELETE)
 
-c = gconf.Client ()
-pic = c.get_string ('/desktop/gnome/background/picture_filename')
-del c
+cb = Gtk.Button (stock = Gtk.STOCK_CANCEL)
+cb.connect ('clicked', Gtk.main_quit)
 
-pb = gtk.gdk.pixbuf_new_from_file (pic).scale_simple (400, 300, gtk.gdk.INTERP_BILINEAR)
+bb = Gtk.HButtonBox ()
+bb.pack_start (db, True, True, 8)
+bb.pack_end (cb, True, True, 8)
 
-i = gtk.Image ()
-i.set_from_pixbuf (pb)
-i.show ()
-
-f = gtk.Frame ()
-f.add (i)
-f.set_shadow_type (gtk.SHADOW_IN)
-f.show ()
-
-db = gtk.Button (stock = gtk.STOCK_DELETE)
-db.connect ('clicked', db_clicked, pic)
-db.show ()
-
-cb = gtk.Button (stock = gtk.STOCK_CANCEL)
-cb.connect ('clicked', gtk.main_quit)
-cb.set_flags (gtk.CAN_DEFAULT)
-cb.show ()
-
-bb = gtk.HButtonBox ()
-bb.pack_start (db, padding = 8)
-bb.pack_end (cb, padding = 8)
-bb.show ()
-
-vb = gtk.VBox ()
-vb.pack_start (f)
-vb.pack_end (bb, expand = False)
-#vb.set_spacing (2)
+vb = Gtk.VBox ()
+vb.pack_start (f, True, True, 0)
+vb.pack_end (bb, False, True, 0)
 vb.set_spacing (8)
-vb.show ()
 
-w = gtk.Window ()
-w.connect ('delete-event', gtk.main_quit)
-#w.set_border_width (5)
+w = Gtk.Window ()
+w.connect ('delete-event', Gtk.main_quit)
 w.set_border_width (8)
 w.add (vb)
-w.set_default (cb) # TODO: this does not work
 w.set_title ('Delete desktop background?')
-w.set_position (gtk.WIN_POS_CENTER)
+w.set_position (Gtk.WindowPosition.CENTER)
 w.set_resizable (False)
-w.show ()
+w.show_all ()
 
-gtk.main ()
+def on_changed (settings, key):
+	if key == 'picture-uri':
+		pic = Gio.File.new_for_uri (settings.get_string (key))
+		pb = GdkPixbuf.Pixbuf.new_from_file_at_size (pic.get_path (), 400, 300)
+		i.set_from_pixbuf (pb)
+
+		global db_handler
+		try:
+			db.disconnect (db_handler)
+		except NameError:
+			pass
+		db_handler = db.connect ('clicked', db_clicked, pic)
+		db.set_sensitive (True)
+
+c = Gio.Settings.new ('org.gnome.desktop.background')
+c.connect ('changed', on_changed)
+on_changed (c, 'picture-uri')
+
+Gtk.main ()
