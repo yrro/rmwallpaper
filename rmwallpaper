@@ -14,6 +14,8 @@ f = Gtk.Frame ()
 f.add (i)
 f.set_shadow_type (Gtk.ShadowType.IN)
 
+caption = Gtk.Label ()
+
 def db_clicked (button, f):
 	f.trash (None)
 	update_state (None)
@@ -44,11 +46,13 @@ w.show_all ()
 
 def on_changed (settings, key):
 	if key == 'picture-uri':
+		caption.hide ()
 		pic = Gio.File.new_for_uri (settings.get_string (key))
 		try:
 			pb = GdkPixbuf.Pixbuf.new_from_file_at_size (pic.get_path (), 400, 300)
 			i.set_from_pixbuf (pb)
 		except Exception as e:
+			caption.set_text (str (e))
 			pic = None
 			i.set_from_icon_name ("image-missing", Gtk.IconSize.DIALOG)
 
