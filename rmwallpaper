@@ -16,10 +16,7 @@ f.set_shadow_type (Gtk.ShadowType.IN)
 
 def db_clicked (button, f):
 	f.trash (None)
-	global db_handler
-	button.disconnect (db_handler)
-	del db_handler
-	button.set_sensitive (False)
+	update_state (None)
 
 db = Gtk.Button ("Trash")
 
@@ -32,6 +29,7 @@ bb.pack_end (cb, True, True, 8)
 
 vb = Gtk.VBox ()
 vb.pack_start (f, True, True, 0)
+vb.pack_start (caption, True, True, 0)
 vb.pack_end (bb, False, True, 0)
 vb.set_spacing (8)
 
@@ -50,18 +48,22 @@ def on_changed (settings, key):
 		try:
 			pb = GdkPixbuf.Pixbuf.new_from_file_at_size (pic.get_path (), 400, 300)
 			i.set_from_pixbuf (pb)
-		except:
+		except Exception as e:
 			pic = None
-			i.set_from_stock (Gtk.STOCK_DIALOG_WARNING, Gtk.IconSize.DIALOG)
+			i.set_from_icon_name ("image-missing", Gtk.IconSize.DIALOG)
 
+		update_state (pic)
+
+def update_state (f):
 		global db_handler
 		try:
 			db.disconnect (db_handler)
+			del db_handler
 		except NameError:
 			pass
 
-		if pic:
-			db_handler = db.connect ('clicked', db_clicked, pic)
+		if f:
+			db_handler = db.connect ('clicked', db_clicked, f)
 			db.set_sensitive (True)
 		else:
 			db.set_sensitive (False)
